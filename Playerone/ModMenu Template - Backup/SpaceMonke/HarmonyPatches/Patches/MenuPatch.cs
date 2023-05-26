@@ -27,6 +27,8 @@ using GorillaLocomotion.Gameplay;
 using Valve.VR.InteractionSystem;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
+using Player = Photon.Realtime.Player;
+using System.Collections;
 
 namespace Player1.Main
 {
@@ -54,14 +56,15 @@ namespace Player1.Main
                 
                 if (once)
                 {
-                    Debug.Log("menu spawing");
-                    PageNum = 0;
-                    CheckPages = true;
+                    //Debug.Log("menu spawing");
+                    //PageNum = 0;
+                    //CheckPages = true;
+                    setting = QualitySettings.masterTextureLimit;
                     Anti_Ban.StartAntiBan();
-                    Debug.Log("menu Spawned");
+                    //Debug.Log("menu Spawned");
                     once = false;
                 }
-                if (UnityInput.Current.GetKey(KeyCode.Y))
+                /*if (UnityInput.Current.GetKey(KeyCode.Y))
                 {
                     PageNum = 0;
                     CheckPages = true;
@@ -80,7 +83,7 @@ namespace Player1.Main
                 {
                     PageNum = 3;
                     CheckPages = true;
-                }
+                }*/
                 if (CheckPages == true)
                 {
                     if (MenuPatch.PageNum == 0)
@@ -114,7 +117,16 @@ namespace Player1.Main
                     {
                         UnityEngine.Object.Destroy(MenuPatch.menu);
                         MenuPatch.menu = null;
-                        PageManager.AddPage(3, "Random Mat [TESTING]", "Hunt Fucker [TESTING]", "Break Gamemode [TESTING]", "Fling Gun", "Break Mod Checker", "Made By PLAYERONE");
+                        PageManager.AddPage(3, "Random Mat [TESTING]", "Hunt Fucker [TESTING]", "Break Gamemode [TESTING]", "Fling Gun [C]", "Break Mod Checker", "Made By PLAYERONE");
+                        Draw();
+                        Debug.Log("Page Num: " + PageNum.ToString());
+                        CheckPages = false;
+                    }
+                    if (MenuPatch.PageNum == 4)
+                    {
+                        UnityEngine.Object.Destroy(MenuPatch.menu);
+                        MenuPatch.menu = null;
+                        PageManager.AddPage(4, "Rope Up [C]", "Rope Down [C]", "Break Movement", "No Grafics", "Detach all players [C]", "");
                         Draw();
                         Debug.Log("Page Num: " + PageNum.ToString());
                         CheckPages = false;
@@ -157,8 +169,8 @@ namespace Player1.Main
                 bool flag5 = MenuPatch.gripDown && MenuPatch.menu != null;
                 if (flag5)
                 {
-                    MenuPatch.menu.transform.position = MenuPos;
-                    MenuPatch.menu.transform.rotation = MenuRot;
+                    MenuPatch.menu.transform.position = GorillaLocomotion.Player.Instance.leftHandTransform.position;
+                    MenuPatch.menu.transform.rotation = GorillaLocomotion.Player.Instance.leftHandTransform.rotation;
                 }
                 if (PageNum == 0)
                 {
@@ -445,11 +457,108 @@ namespace Player1.Main
                     }
                     if (buttonsActive[6] == true)
                     {
-                        PageManager.ChangePage(0);
+                        PageManager.ChangePage(4);
                     }
                     if (buttonsActive[7] == true)
                     {
                         PageManager.ChangePage(2);
+                    }
+                }
+                if (PageNum == 4)
+                {
+                    if (buttonsActive[0]==true)
+                    {
+                        foreach (GorillaRopeSwing ropeSwing in UnityEngine.Object.FindObjectsOfType(typeof(GorillaRopeSwing)))
+                        {
+                            Anti_Ban.StartAntiBan();
+                            if (!ropeSwing.photonView.IsMine)
+                            {
+                                Anti_Ban.setOwnership(ropeSwing.photonView);
+                                ropeSwing.photonView.RequestOwnership();
+                            }
+                            Vector3 velocity = new Vector3(0, 999, 0);
+                            ropeSwing.SetVelocity_RPC(9, velocity, true);
+                        }
+                    }
+                    if (buttonsActive[1] == true)
+                    {
+                        foreach (GorillaRopeSwing ropeSwing in UnityEngine.Object.FindObjectsOfType(typeof(GorillaRopeSwing)))
+                        {
+                            Anti_Ban.StartAntiBan();
+                            if (!ropeSwing.photonView.IsMine)
+                            {
+                                Anti_Ban.setOwnership(ropeSwing.photonView);
+                                ropeSwing.photonView.RequestOwnership();
+                            }
+                            Vector3 velocity = new Vector3(0, -999, 0);
+                            ropeSwing.SetVelocity_RPC(9, velocity, true);
+                        }
+                    }
+                    if (buttonsActive[2] == true)
+                    {
+                        GorillaGameManager instance = GorillaGameManager.instance;
+                        GorillaTagManager instance2 = new GorillaTagManager();
+                        Player localPlayer = PhotonNetwork.LocalPlayer;
+                        int count = instance.playerVRRigDict.Count;
+                        OwnershipOption option = OwnershipOption.Takeover;
+                        TagAllBecauseihaveto.FindRigByPlayer(PhotonNetwork.LocalPlayer).GetComponent<PhotonView>().OwnershipTransfer = option;
+                        RequestableOwnershipGuard guard = new RequestableOwnershipGuard();
+                        foreach (Player p in PhotonNetwork.PlayerListOthers)
+                        {
+                            var x = TagAllBecauseihaveto.FindRigByPlayer(p);
+                            if (p != null && x.photonView.IsMine)
+                            {
+                                GameObject playerObject = x.photonView.gameObject;
+                                Collider[] colliders = playerObject.GetComponentsInChildren<Collider>();
+                                foreach (Collider collider in colliders)
+                                {
+                                    collider.transform.position = Vector3.zero;
+                                    collider.gameObject.SetActive(false);
+                                    GameObject.Destroy(playerObject.GetComponentInChildren<Collider>());
+                                    collider.enabled = false;
+                                }
+                            }
+                            else if (!x.photonView.AmOwner)
+                            {
+                                var xy = TagAllBecauseihaveto.FindRigByPlayer(p).GetComponent<PhotonView>();
+                                Anti_Ban.setOwnership(xy);
+                            }
+                        }
+                    }
+                    if (buttonsActive[3] == true)
+                    {
+                        QualitySettings.masterTextureLimit = 5;
+                        QualitySettings.SetQualityLevel(5);
+                    }
+                    else
+                    {
+                        QualitySettings.masterTextureLimit = setting;
+                        QualitySettings.SetQualityLevel(setting);
+                    }
+                    if (buttonsActive[4] == true)
+                    {
+                        foreach (Player P in PhotonNetwork.PlayerList)
+                        {
+                            foreach (GorillaRopeSwing ropeSwing in UnityEngine.Object.FindObjectsOfType(typeof(GorillaRopeSwing)))
+                            {
+                                Anti_Ban.StartAntiBan();
+                                if (!ropeSwing.photonView.IsMine)
+                                {
+                                    Anti_Ban.setOwnership(ropeSwing.photonView);
+                                    ropeSwing.photonView.RequestOwnership();
+                                }
+                                ropeSwing.DetachRemotePlayer(P.ActorNumber);
+                            }
+                        }
+
+                    }
+                    if (buttonsActive[6] == true)
+                    {
+                        PageManager.ChangePage(0);
+                    }
+                    if (buttonsActive[7] == true)
+                    {
+                        PageManager.ChangePage(3);
                     }
                 }
                 else
@@ -467,9 +576,11 @@ namespace Player1.Main
             }
             catch (Exception ex)
             {
-                File.WriteAllText("KmanMenu-error.log", ex.ToString());
+                File.WriteAllText("P1Menu-error.log", ex.ToString());
             }
         }
+        public static int setting;
+
         #region Draw
         public static void AddButton(float offset, string text)
         {
@@ -673,6 +784,31 @@ namespace Player1.Main
         public static bool SpawnGrip;
         #endregion
         #region Helpers
+        static int x = 0;
+        public static int y = 0;
+        public static int z = 0;
+        static IEnumerable RopeSpaz()
+        {
+           while (true)
+           {
+                for (int i = 0; i < 20; i++)
+                {
+                    if (10 > i)
+                    {
+                        x = 0;
+                        y = 0;
+                        z = 0;
+                        x += -100;
+                        y += -100;
+                        z += -100;
+                    }
+                    x += 100;
+                    y += 100;
+                    z += 100;
+                    yield return new WaitForSeconds(1);
+                }
+           }
+        }
         public static void KickGun()
         {
             RaycastHit raycastHit;
